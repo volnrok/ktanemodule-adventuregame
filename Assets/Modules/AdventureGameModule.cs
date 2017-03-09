@@ -434,9 +434,9 @@ public class AdventureGameModule : MonoBehaviour
                             {
                                 StatValues[i] += Random.Range(-1, 4); // + -1 to 3
                             }
+                            Debug.LogFormat("[Adventure Game #{0}] Took a potion. Stats are now: {1}", moduleId, logPlayerStats());
                             RegenerateWeaponScores();
                             UpdateStatDisplay();
-                            Debug.LogFormat("[Adventure Game #{0}] Took a potion. Stats are now: {1}", moduleId, logPlayerStats());
                             logItemUsage();
                         }
                         else
