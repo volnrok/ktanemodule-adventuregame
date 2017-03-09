@@ -219,7 +219,7 @@ public class AdventureGameModule : MonoBehaviour
         int stat = (int) (i) / 2;
         int playerStat = StatValues[stat] + ((int) (i) % 2) * 2;
         int enemyStat = EnemyStats[(int) (SelectedEnemy) * NumBaseStats + stat];
-        Debug.LogFormat("[Adventure Game #{0}] Weapon {1}: player stat={2}, enemy stat={3}, score {4}", moduleId, i, playerStat, enemyStat, playerStat - enemyStat);
+        Debug.LogFormat("[Adventure Game #{0}] Weapon {1}: player stat={2}, enemy stat={3}, score {4}", moduleId, ItemName(i), playerStat, enemyStat, playerStat - enemyStat);
         return playerStat - enemyStat;
     }
 
@@ -253,7 +253,7 @@ public class AdventureGameModule : MonoBehaviour
         for (int i = 0; i < InvWeaponCount; i++)
         {
             ITEM item = InvValues[i];
-            Debug.LogFormat("[Adventure Game #{0}] Weapon {1} is {2}", moduleId, item, CorrectWeapon[i] ? "USABLE" : "forbidden");
+            Debug.LogFormat("[Adventure Game #{0}] Weapon {1} is {2}", moduleId, ItemName(item), CorrectWeapon[i] ? "USABLE" : "forbidden");
         }
     }
 
@@ -439,6 +439,10 @@ public class AdventureGameModule : MonoBehaviour
                             Debug.LogFormat("[Adventure Game #{0}] Took a potion. Stats are now: {1}", moduleId, logPlayerStats());
                             logItemUsage();
                         }
+                        else
+                        {
+                            Debug.LogFormat("[Adventure Game #{0}] Item {1} used correctly.", moduleId, ItemName(item));
+                        }
 
                         if (SelectedItem >= InvValues.Count)
                         {
@@ -461,6 +465,7 @@ public class AdventureGameModule : MonoBehaviour
 
                         if (itemToUse == null)
                         {
+                            Debug.LogFormat("[Adventure Game #{0}] Weapon {1} used correctly. Module passed.", moduleId, ItemName(InvValues[SelectedItem]));
                             BombModule.HandlePass();
                         }
                         else
