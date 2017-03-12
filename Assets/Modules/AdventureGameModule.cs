@@ -253,7 +253,7 @@ public class AdventureGameModule : MonoBehaviour
         for (int i = 0; i < InvWeaponCount; i++)
         {
             ITEM item = InvValues[i];
-            Debug.LogFormat("[Adventure Game #{0}] Weapon {1} is {2}", moduleId, ItemName(item), CorrectWeapon[i] ? "USABLE" : "forbidden");
+            Debug.LogFormat("[Adventure Game #{0}] Weapon {1}: {2}", moduleId, ItemName(item), CorrectWeapon[i] ? "CAN USE" : "don’t use");
         }
     }
 
