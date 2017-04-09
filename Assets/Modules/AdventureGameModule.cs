@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -494,5 +495,57 @@ public class AdventureGameModule : MonoBehaviour
     private string logEnvStats()
     {
         return string.Format("{0}, {1}, {2}, {3}", GetStatDisplay(3), GetStatDisplay(4), GetStatDisplay(5), GetStatDisplay(6));
+    }
+
+    IEnumerator ProcessTwitchCommand(string command)
+    {
+        command = command.Trim();
+        if (command.Equals("cycle stats", System.StringComparison.InvariantCultureIgnoreCase))
+        {
+            for (int i = 0; i < NumStats; i++)
+            {
+                yield return ButtonStatRight;
+                yield return new WaitForSeconds(1.3f);
+                yield return ButtonStatRight;
+            }
+            yield break;
+        }
+
+        else if (
+            command.Equals("cycle items", System.StringComparison.InvariantCultureIgnoreCase) ||
+            command.Equals("cycle weapons", System.StringComparison.InvariantCultureIgnoreCase) ||
+            command.Equals("cycle inventory", System.StringComparison.InvariantCultureIgnoreCase))
+        {
+            for (int i = 0; i < InvWeaponCount + InvMiscCount; i++)
+            {
+                yield return ButtonInvRight;
+                yield return new WaitForSeconds(1.3f);
+                yield return ButtonInvRight;
+            }
+            yield break;
+        }
+
+        else if (command.StartsWith("use ", System.StringComparison.InvariantCultureIgnoreCase))
+        {
+            command = command.Substring(4).Trim();
+            for (int i = 0; i < InvValues.Count; i++)
+            {
+                if (i > 0)
+                {
+                    yield return ButtonInvRight;
+                    yield return new WaitForSeconds(.1f);
+                    yield return ButtonInvRight;
+                }
+
+                if (ItemName(InvValues[SelectedItem]).Equals(command, System.StringComparison.InvariantCultureIgnoreCase))
+                {
+                    yield return ButtonUse;
+                    yield return new WaitForSeconds(.1f);
+                    yield return ButtonUse;
+                    yield break;
+                }
+            }
+            yield break;
+        }
     }
 }
