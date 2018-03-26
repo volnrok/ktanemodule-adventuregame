@@ -1,7 +1,9 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 public class AdventureGameModule : MonoBehaviour
 {
@@ -497,55 +499,78 @@ public class AdventureGameModule : MonoBehaviour
         return string.Format("{0}, {1}, {2}, {3}", GetStatDisplay(3), GetStatDisplay(4), GetStatDisplay(5), GetStatDisplay(6));
     }
 
+#pragma warning disable 414
+    private string TwitchHelpMessage = "Cycle the stats with !{0} cycle stats. Cycle the Weapons/Items with !{0} cycle items. Cylce everything with !{0} cycle all. Use weapons/Items with !{0} use potion. Use multiple items with !{0} use ticket, crystal ball, caber. (spell out the item name completely. not case sensitive)";
+#pragma warning restore 414
+
     IEnumerator ProcessTwitchCommand(string command)
     {
-        command = command.Trim();
-        if (command.Equals("cycle stats", System.StringComparison.InvariantCultureIgnoreCase))
+        command = command.ToLowerInvariant().Trim();
+        if (command.Equals("cycle stats") || command.Equals("cycle") || command.Equals("cycle all"))
         {
+            yield return null;
             for (int i = 0; i < NumStats; i++)
             {
-                yield return ButtonStatRight;
+                yield return ButtonStatRight.OnInteract();
                 yield return new WaitForSeconds(1.3f);
-                yield return ButtonStatRight;
             }
-            yield break;
+            if (command.Equals("cycle stats"))
+                yield break;
+            else
+                yield return new WaitForSeconds(1.3f);
         }
 
-        else if (
-            command.Equals("cycle items", System.StringComparison.InvariantCultureIgnoreCase) ||
-            command.Equals("cycle weapons", System.StringComparison.InvariantCultureIgnoreCase) ||
-            command.Equals("cycle inventory", System.StringComparison.InvariantCultureIgnoreCase))
+        if (
+            command.Equals("cycle items") || command.Equals("cycle weapons") || command.Equals("cycle inventory") ||
+            command.Equals("cycle all") || command.Equals("cycle"))
         {
+            yield return null;
             for (int i = 0; i < InvWeaponCount + InvMiscCount; i++)
             {
-                yield return ButtonInvRight;
+                yield return ButtonInvRight.OnInteract();
                 yield return new WaitForSeconds(1.3f);
-                yield return ButtonInvRight;
             }
             yield break;
-        }
+        } 
 
-        else if (command.StartsWith("use ", System.StringComparison.InvariantCultureIgnoreCase))
+        if (command.StartsWith("use "))
         {
-            command = command.Substring(4).Trim();
-            for (int i = 0; i < InvValues.Count; i++)
-            {
-                if (i > 0)
-                {
-                    yield return ButtonInvRight;
-                    yield return new WaitForSeconds(.1f);
-                    yield return ButtonInvRight;
-                }
+            string[] validItems = ((ITEM[]) Enum.GetValues(typeof(ITEM))).Select(x => ItemName(x).ToLowerInvariant()).ToArray();
 
-                if (ItemName(InvValues[SelectedItem]).Equals(command, System.StringComparison.InvariantCultureIgnoreCase))
-                {
-                    yield return ButtonUse;
-                    yield return new WaitForSeconds(.1f);
-                    yield return ButtonUse;
-                    yield break;
-                }
+            command = command.Substring(4).Trim();
+            string[] items = command.Split(new[] {','}, StringSplitOptions.RemoveEmptyEntries);
+
+            string invalidItem = items.FirstOrDefault(x => !validItems.Contains(x.Trim()));
+            if (!string.IsNullOrEmpty(invalidItem))
+            {
+                yield return string.Format("sendtochat Are you sure there is an item called '{0}'? The only items I am aware of existing are: {1}", invalidItem, string.Join(", ", validItems));
+                yield break;
             }
-            yield break;
+
+            yield return null;
+            foreach (string item in items)
+            {
+                bool itemUsed = false;
+                int currentItem = SelectedItem;
+                do
+                {
+                    if (ItemName(InvValues[SelectedItem]).Equals(item.Trim(), StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        itemUsed = true;
+                        yield return ButtonUse.OnInteract();
+                        yield return new WaitForSeconds(.1f);
+                        break;
+                    }
+                    yield return ButtonInvRight.OnInteract();
+                    yield return new WaitForSeconds(.1f);
+                } while (currentItem != SelectedItem);
+
+                if (itemUsed) continue;
+
+                yield return string.Format("sendtochat I don't seem to have a '{0}' in my inventory to use.", item);
+                yield return "unsubmittablepenalty";
+                yield break;
+            }
         }
     }
 }
