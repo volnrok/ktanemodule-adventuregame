@@ -13,5 +13,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   id: spwizAdventureGame
   title: Adventure Game
+  description: "[i]This appears to be a strange interface for an old text adventure
+    game. All of the inventory management puzzles you have come to know and love,
+    but none of the story.[/i]\n\n[h1]About[/h1]\nYou are fighting an enemy, and must
+    determine which inventory items will help in the fight, and which weapon will
+    be the most effective.\n\n[h1]Manual[/h1]\nA PDF of the manual is included in
+    the download, you can also download here:\nhttps://ktane.timwi.de/HTML/Adventure%20Game.html\n\n[h1]Module
+    ID[/h1]\nspwizAdventureGame\r\n\r\nThanks to Timwi for help with the manual formatting."
   version: 0.1.0
   outputFolder: build
+  previewImage: {fileID: 2800000, guid: b9ba0065f8676b44094d7bde0764e92b, type: 3}
