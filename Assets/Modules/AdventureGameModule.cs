@@ -1,7 +1,9 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 public class AdventureGameModule : MonoBehaviour
 {
@@ -497,55 +499,119 @@ public class AdventureGameModule : MonoBehaviour
         return string.Format("{0}, {1}, {2}, {3}", GetStatDisplay(3), GetStatDisplay(4), GetStatDisplay(5), GetStatDisplay(6));
     }
 
+#pragma warning disable 414
+    private string TwitchHelpMessage = "Cycle the stats with !{0} cycle stats. Cycle the Weapons/Items with !{0} cycle items. Cylce everything with !{0} cycle all. Use weapons/Items with !{0} use potion. Use multiple items with !{0} use ticket, crystal ball, caber. (spell out the item name completely. not case sensitive)";
+    private bool TwitchShouldCancelCommand;
+#pragma warning restore 414
+
     IEnumerator ProcessTwitchCommand(string command)
     {
-        command = command.Trim();
-        if (command.Equals("cycle stats", System.StringComparison.InvariantCultureIgnoreCase))
-        {
-            for (int i = 0; i < NumStats; i++)
-            {
-                yield return ButtonStatRight;
-                yield return new WaitForSeconds(1.3f);
-                yield return ButtonStatRight;
-            }
-            yield break;
-        }
+        string[] split = command.ToLowerInvariant().Trim().Split(new[] {' '}, 2);
 
-        else if (
-            command.Equals("cycle items", System.StringComparison.InvariantCultureIgnoreCase) ||
-            command.Equals("cycle weapons", System.StringComparison.InvariantCultureIgnoreCase) ||
-            command.Equals("cycle inventory", System.StringComparison.InvariantCultureIgnoreCase))
-        {
-            for (int i = 0; i < InvWeaponCount + InvMiscCount; i++)
-            {
-                yield return ButtonInvRight;
-                yield return new WaitForSeconds(1.3f);
-                yield return ButtonInvRight;
-            }
-            yield break;
-        }
+        if (split.Length == 1 && split[0].Equals("cycle")) split = new[] {"cycle", "all"};
 
-        else if (command.StartsWith("use ", System.StringComparison.InvariantCultureIgnoreCase))
+        switch (split[0])
         {
-            command = command.Substring(4).Trim();
-            for (int i = 0; i < InvValues.Count; i++)
-            {
-                if (i > 0)
+            case "cycle":
+                switch (split[1])
                 {
-                    yield return ButtonInvRight;
-                    yield return new WaitForSeconds(.1f);
-                    yield return ButtonInvRight;
+                    case "all":
+                    case "stats":
+                        yield return null;
+                        for (int i = 0; i < NumStats; i++)
+                        {
+                            yield return ButtonStatRight.OnInteract();
+                            yield return TwitchShouldCancelCommand
+                                ? new WaitForSeconds(0.1f)
+                                : new WaitForSeconds(1.3f);
+                        }
+                        if (split[1].Equals("all"))
+                        {
+                            yield return new WaitForSeconds(1.3f);
+                            goto case "items";
+                        }
+                        break;
+                    case "items":
+                    case "weapons":
+                    case "inventory":
+                        yield return null;
+                        for (int i = 0; i < InvWeaponCount + InvMiscCount; i++)
+                        {
+                            yield return ButtonInvRight.OnInteract();
+                            yield return TwitchShouldCancelCommand
+                                ? new WaitForSeconds(0.1f)
+                                : new WaitForSeconds(1.3f);
+                        }
+                        break;
+                    default:
+                        yield return string.Format("sendtochat Adventurer: Hey {0}, please cycle {1} for me.\n{0}: Excuse me? Cycle what now?", SelectedEnemy, split[1]);
+                        yield break;
                 }
-
-                if (ItemName(InvValues[SelectedItem]).Equals(command, System.StringComparison.InvariantCultureIgnoreCase))
+                if (TwitchShouldCancelCommand)
                 {
-                    yield return ButtonUse;
-                    yield return new WaitForSeconds(.1f);
-                    yield return ButtonUse;
+                    yield return "cancelled";
                     yield break;
                 }
-            }
-            yield break;
+                break;
+            case "use":
+                if (split.Length == 1)
+                {
+                    yield return "sendtochat Adventurer: You are asking me to use an item, but I don't know which one you want me to use.";
+                    yield break;
+                }
+
+                string[] validItems = ((ITEM[])Enum.GetValues(typeof(ITEM))).Select(x => ItemName(x).ToLowerInvariant()).ToArray();
+
+                string[] items = split[1].Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+
+                string invalidItem = items.FirstOrDefault(x => !validItems.Contains(x.Trim()));
+                if (!string.IsNullOrEmpty(invalidItem))
+                {
+                    yield return string.Format("sendtochat Adventurer: Hey {0}? Do you know what a '{1}' looks like?\n{0}: Nope. The only items I have ever heard of are {2}.", SelectedEnemy, invalidItem, string.Join(", ", validItems));
+                    yield break;
+                }
+
+                yield return null;
+                foreach (string item in items)
+                {
+                    bool itemUsed = false;
+                    int currentItem = SelectedItem;
+                    do
+                    {
+                        if (TwitchShouldCancelCommand)
+                        {
+                            yield return "cancelled";
+                            yield break;
+                        }
+
+                        if (ItemName(InvValues[SelectedItem]).Equals(item.Trim(), StringComparison.InvariantCultureIgnoreCase))
+                        {
+                            itemUsed = true;
+                            if (InvValues[SelectedItem] == ITEM.CHEAT_CODE)
+                            {
+                                yield return string.Format("sendtochat {0}: Hey adventurer? Didn't anybody tell you that cheaters never prosper?", SelectedEnemy);
+                            }
+                            yield return ButtonUse.OnInteract();
+                            yield return new WaitForSeconds(.1f);
+                            break;
+                        }
+                        yield return ButtonInvRight.OnInteract();
+                        yield return new WaitForSeconds(.1f);
+                    } while (currentItem != SelectedItem);
+
+                    if (itemUsed) continue;
+
+                    yield return string.Format("sendtochat Adventurer: Hey {0}? Would you mind lending me a {1}?", SelectedEnemy, item);
+                    yield return item.Equals(ItemName(ITEM.CHEAT_CODE), StringComparison.InvariantCultureIgnoreCase) 
+                        ? string.Format("sendtochat {0}: Yeah, sure. Lets both cheat together.", SelectedEnemy) 
+                        : string.Format("sendtochat {0}: Nope. Sorry, I need it for my own uses.", SelectedEnemy);
+                    yield return "unsubmittablepenalty";
+                    yield break;
+                }
+                break;
+            default:
+                yield return string.Format("sendtochaterror The {0} told me to tell you that the valid commands are 'cycle stats', 'cycle items', 'cycle all', and 'use [item]'", SelectedEnemy);
+                yield break;
         }
     }
 }
