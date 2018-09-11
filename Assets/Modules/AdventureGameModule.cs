@@ -506,9 +506,9 @@ public class AdventureGameModule : MonoBehaviour
 
     IEnumerator ProcessTwitchCommand(string command)
     {
-        string[] split = command.ToLowerInvariant().Trim().Split(new[] {' '}, 2);
+        string[] split = command.ToLowerInvariant().Trim().Split(new[] { ' ' }, 2);
 
-        if (split.Length == 1 && split[0].Equals("cycle")) split = new[] {"cycle", "all"};
+        if (split.Length == 1 && split[0].Equals("cycle")) split = new[] { "cycle", "all" };
 
         switch (split[0])
         {
@@ -518,9 +518,10 @@ public class AdventureGameModule : MonoBehaviour
                     case "all":
                     case "stats":
                         yield return null;
+                        yield return new WaitUntil(() => isActive);
                         for (int i = 0; i < NumStats; i++)
                         {
-                            yield return ButtonStatRight.OnInteract();
+                            ButtonStatRight.OnInteract();
                             yield return TwitchShouldCancelCommand
                                 ? new WaitForSeconds(0.1f)
                                 : new WaitForSeconds(1.3f);
@@ -535,9 +536,10 @@ public class AdventureGameModule : MonoBehaviour
                     case "weapons":
                     case "inventory":
                         yield return null;
+                        yield return new WaitUntil(() => isActive);
                         for (int i = 0; i < InvWeaponCount + InvMiscCount; i++)
                         {
-                            yield return ButtonInvRight.OnInteract();
+                            ButtonInvRight.OnInteract();
                             yield return TwitchShouldCancelCommand
                                 ? new WaitForSeconds(0.1f)
                                 : new WaitForSeconds(1.3f);
@@ -560,7 +562,7 @@ public class AdventureGameModule : MonoBehaviour
                     yield break;
                 }
 
-                string[] validItems = ((ITEM[])Enum.GetValues(typeof(ITEM))).Select(x => ItemName(x).ToLowerInvariant()).ToArray();
+                string[] validItems = ((ITEM[]) Enum.GetValues(typeof(ITEM))).Select(x => ItemName(x).ToLowerInvariant()).ToArray();
 
                 string[] items = split[1].Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
 
@@ -572,6 +574,7 @@ public class AdventureGameModule : MonoBehaviour
                 }
 
                 yield return null;
+                yield return new WaitUntil(() => isActive);
                 foreach (string item in items)
                 {
                     bool itemUsed = false;
@@ -591,26 +594,26 @@ public class AdventureGameModule : MonoBehaviour
                             {
                                 yield return string.Format("sendtochat {0}: Hey adventurer? Didn't anybody tell you that cheaters never prosper?", SelectedEnemy);
                             }
-                            yield return ButtonUse.OnInteract();
+                            ButtonUse.OnInteract();
                             yield return new WaitForSeconds(.1f);
                             break;
                         }
-                        yield return ButtonInvRight.OnInteract();
+                        ButtonInvRight.OnInteract();
                         yield return new WaitForSeconds(.1f);
                     } while (currentItem != SelectedItem);
 
                     if (itemUsed) continue;
 
                     yield return string.Format("sendtochat Adventurer: Hey {0}? Would you mind lending me a {1}?", SelectedEnemy, item);
-                    yield return item.Equals(ItemName(ITEM.CHEAT_CODE), StringComparison.InvariantCultureIgnoreCase) 
-                        ? string.Format("sendtochat {0}: Yeah, sure. Lets both cheat together.", SelectedEnemy) 
+                    yield return item.Equals(ItemName(ITEM.CHEAT_CODE), StringComparison.InvariantCultureIgnoreCase)
+                        ? string.Format("sendtochat {0}: Yeah, sure. Lets both cheat together.", SelectedEnemy)
                         : string.Format("sendtochat {0}: Nope. Sorry, I need it for my own uses.", SelectedEnemy);
                     yield return "unsubmittablepenalty";
                     yield break;
                 }
                 break;
             default:
-                yield return string.Format("sendtochaterror The {0} told me to tell you that the valid commands are 'cycle stats', 'cycle items', 'cycle all', and 'use [item]'", SelectedEnemy);
+                yield return string.Format("sendtochaterror The {0} told me to tell you that the valid commands are 'cycle stats', 'cycle items', 'cycle all', and 'use [item]'.", SelectedEnemy);
                 yield break;
         }
     }
